@@ -1,0 +1,23 @@
+filmweb:
+  username: your_filmweb_username
+
+radarr:
+  url: http://localhost:7878
+  api_key: your_radarr_api_key
+  root_folder: /movies
+  quality_profile_id: 1
+  enabled: true
+
+sonarr:
+  url: http://localhost:8989
+  api_key: your_sonarr_api_key
+  root_folder: /tv
+  quality_profile_id: 1
+  # language_profile_id: 1  # Sonarr v3 only; omit for Sonarr v4
+  enabled: true
+
+sync:
+  interval_minutes: 30
+  dry_run: false
+  state_file: /data/state.json
+  add_delay_seconds: 5  # seconds to wait between adding items to Radarr/Sonarr

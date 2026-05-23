@@ -1,0 +1,28 @@
+services:
+  filmweb-arr-sync:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - filmweb_sync_data:/data
+      # Uncomment to use a config file instead of environment variables:
+      # - ./config.yaml:/app/config.yaml:ro
+    environment:
+      FILMWEB_USERNAME: your_filmweb_username
+
+      RADARR_URL: http://radarr:7878
+      RADARR_API_KEY: your_radarr_api_key
+      RADARR_ROOT_FOLDER: /movies
+      RADARR_QUALITY_PROFILE_ID: 1
+
+      SONARR_URL: http://sonarr:8989
+      SONARR_API_KEY: your_sonarr_api_key
+      SONARR_ROOT_FOLDER: /tv
+      SONARR_QUALITY_PROFILE_ID: 1
+      # SONARR_LANGUAGE_PROFILE_ID: 1  # Sonarr v3 only
+
+      SYNC_INTERVAL_MINUTES: 30
+      ADD_DELAY_SECONDS: 5
+      # SYNC_DRY_RUN: "true"  # Uncomment to preview without making changes
+
+volumes:
+  filmweb_sync_data:
