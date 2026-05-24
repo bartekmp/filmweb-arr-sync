@@ -53,3 +53,11 @@ ignore = []
 
 [tool.ruff.lint.isort]
 known-first-party = ["filmweb_arr_sync"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = ""
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
