@@ -12,6 +12,15 @@ def syncer():
     return MagicMock()
 
 
+@pytest.fixture(autouse=True)
+def mock_health():
+    with (
+        patch("filmweb_arr_sync.scheduler.health.start"),
+        patch("filmweb_arr_sync.scheduler.health.set_last_sync"),
+    ):
+        yield
+
+
 def _shutdown_after(n_false_calls):
     """Return an is_set() side_effect that returns False n times then True.
 

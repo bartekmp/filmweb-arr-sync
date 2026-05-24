@@ -64,7 +64,7 @@ class TestMoviePhaseOrdering:
             call_order.append(("lookup", titles[0]))
             or {"title": titles[0], "tmdbId": hash(titles[0]) % 1000}
         )
-        syncer._radarr.add.side_effect = lambda result, *_: call_order.append(
+        syncer._radarr.add.side_effect = lambda result, *_, **__: call_order.append(
             ("add", result["title"])
         )
 
@@ -232,6 +232,71 @@ class TestAddMovie:
         assert 2 in state.processed_films
 
 
+# --- tagging ---
+
+
+class TestTagging:
+    def test_tag_resolved_once_for_all_movies(self, tmp_path):
+        state = State(str(tmp_path / "state.json"))
+        syncer = make_syncer(make_config(), state)
+        syncer._filmweb.get_movies.return_value = [
+            make_item(filmweb_id=1, original_title="A"),
+            make_item(filmweb_id=2, original_title="B"),
+        ]
+        syncer._radarr.get_existing_tmdb_ids.return_value = set()
+        syncer._radarr.lookup.side_effect = [
+            {"title": "A", "tmdbId": 1},
+            {"title": "B", "tmdbId": 2},
+        ]
+        syncer._radarr.ensure_tag.return_value = 7
+
+        syncer._sync_movies()
+
+        syncer._radarr.ensure_tag.assert_called_once_with("filmweb")
+
+    def test_tag_id_passed_to_add(self, tmp_path):
+        state = State(str(tmp_path / "state.json"))
+        syncer = make_syncer(make_config(), state)
+        syncer._filmweb.get_movies.return_value = [make_item(filmweb_id=1)]
+        syncer._radarr.get_existing_tmdb_ids.return_value = set()
+        syncer._radarr.lookup.return_value = {"title": "Movie", "tmdbId": 99}
+        syncer._radarr.ensure_tag.return_value = 7
+
+        syncer._sync_movies()
+
+        call_kwargs = syncer._radarr.add.call_args.kwargs
+        assert call_kwargs["tag_id"] == 7
+
+    def test_empty_tag_skips_ensure_tag(self, tmp_path):
+        state = State(str(tmp_path / "state.json"))
+        config = make_config()
+        config.radarr.tag = ""
+        syncer = make_syncer(config, state)
+        syncer._filmweb.get_movies.return_value = [make_item(filmweb_id=1)]
+        syncer._radarr.get_existing_tmdb_ids.return_value = set()
+        syncer._radarr.lookup.return_value = {"title": "Movie", "tmdbId": 99}
+
+        syncer._sync_movies()
+
+        syncer._radarr.ensure_tag.assert_not_called()
+        call_kwargs = syncer._radarr.add.call_args.kwargs
+        assert call_kwargs["tag_id"] is None
+
+    def test_tag_resolution_failure_does_not_block_add(self, tmp_path):
+        state = State(str(tmp_path / "state.json"))
+        syncer = make_syncer(make_config(), state)
+        syncer._filmweb.get_movies.return_value = [make_item(filmweb_id=1)]
+        syncer._radarr.get_existing_tmdb_ids.return_value = set()
+        syncer._radarr.lookup.return_value = {"title": "Movie", "tmdbId": 99}
+        syncer._radarr.ensure_tag.side_effect = Exception("connection error")
+
+        syncer._sync_movies()
+
+        syncer._radarr.add.assert_called_once()
+        call_kwargs = syncer._radarr.add.call_args.kwargs
+        assert call_kwargs["tag_id"] is None
+
+
 # --- serials ---
 
 
@@ -250,7 +315,7 @@ class TestSyncSerials:
             call_order.append(("lookup", titles[0]))
             or {"title": titles[0], "tvdbId": hash(titles[0]) % 1000, "seasons": []}
         )
-        syncer._sonarr.add.side_effect = lambda result, *_: call_order.append(
+        syncer._sonarr.add.side_effect = lambda result, *_, **__: call_order.append(
             ("add", result["title"])
         )
 
