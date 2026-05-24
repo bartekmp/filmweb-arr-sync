@@ -45,7 +45,7 @@ class Syncer:
     # --- movies ---
 
     def _sync_movies(self) -> None:
-        logger.info("--- Movies ---")
+        logger.info("--- Movies @ Radarr ---")
         movies = self._filmweb.get_movies()
 
         new_items = [m for m in movies if m.filmweb_id not in self._state.processed_films]
@@ -95,7 +95,12 @@ class Syncer:
         matched_title: str = result.get("title", item.search_titles[0])
 
         if tmdb_id in existing_tmdb_ids:
-            logger.info("Already in Radarr: %s (tmdbId=%d)", matched_title, tmdb_id)
+            logger.info(
+                "Already in Radarr: %s (tmdbId=%d)",
+                matched_title,
+                tmdb_id,
+                extra={"status": "skip"},
+            )
             self._state.mark_film_processed(item.filmweb_id)
             return None
 
@@ -113,7 +118,9 @@ class Syncer:
             self._radarr.add(
                 result, self._config.radarr.root_folder, self._config.radarr.quality_profile_id
             )  # type: ignore[union-attr]
-            logger.info("Added to Radarr: %s (tmdbId=%d)", matched_title, tmdb_id)
+            logger.info(
+                "Added to Radarr: %s (tmdbId=%d)", matched_title, tmdb_id, extra={"status": "ok"}
+            )
             self._state.mark_film_processed(item.filmweb_id)
         except Exception as e:
             logger.error("Failed to add %s to Radarr: %s — will retry next sync", matched_title, e)
@@ -121,7 +128,7 @@ class Syncer:
     # --- serials ---
 
     def _sync_serials(self) -> None:
-        logger.info("--- Serials ---")
+        logger.info("--- Serials @ Sonarr ---")
         serials = self._filmweb.get_serials()
 
         new_items = [s for s in serials if s.filmweb_id not in self._state.processed_serials]
@@ -171,7 +178,12 @@ class Syncer:
         matched_title: str = result.get("title", item.search_titles[0])
 
         if tvdb_id in existing_tvdb_ids:
-            logger.info("Already in Sonarr: %s (tvdbId=%d)", matched_title, tvdb_id)
+            logger.info(
+                "Already in Sonarr: %s (tvdbId=%d)",
+                matched_title,
+                tvdb_id,
+                extra={"status": "skip"},
+            )
             self._state.mark_serial_processed(item.filmweb_id)
             return None
 
@@ -192,7 +204,9 @@ class Syncer:
                 self._config.sonarr.quality_profile_id,
                 self._config.sonarr.language_profile_id,
             )
-            logger.info("Added to Sonarr: %s (tvdbId=%d)", matched_title, tvdb_id)
+            logger.info(
+                "Added to Sonarr: %s (tvdbId=%d)", matched_title, tvdb_id, extra={"status": "ok"}
+            )
             self._state.mark_serial_processed(item.filmweb_id)
         except Exception as e:
             logger.error("Failed to add %s to Sonarr: %s — will retry next sync", matched_title, e)
