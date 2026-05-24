@@ -13,15 +13,18 @@ services:
       RADARR_API_KEY: your_radarr_api_key
       RADARR_ROOT_FOLDER: /movies
       RADARR_QUALITY_PROFILE_ID: 1
+      # RADARR_ENABLED: "false"  # Set to false to disable Radarr sync
 
       SONARR_URL: http://sonarr:8989
       SONARR_API_KEY: your_sonarr_api_key
       SONARR_ROOT_FOLDER: /tv
       SONARR_QUALITY_PROFILE_ID: 1
       # SONARR_LANGUAGE_PROFILE_ID: 1  # Sonarr v3 only
+      # SONARR_ENABLED: "false"  # Set to false to disable Sonarr sync
 
       SYNC_INTERVAL_MINUTES: 30
       ADD_DELAY_SECONDS: 5
+      # STATE_FILE: /data/state.json  # Override default state file location
       # SYNC_DRY_RUN: "true"  # Uncomment to preview without making changes
 
 volumes:
