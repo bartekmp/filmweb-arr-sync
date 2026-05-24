@@ -24,6 +24,16 @@ class RadarrClient:
         response.raise_for_status()
         return {m["tmdbId"] for m in response.json()}
 
+    def ensure_tag(self, label: str) -> int:
+        response = self._session.get(f"{self._base}/api/v3/tag", timeout=30)
+        response.raise_for_status()
+        for tag in response.json():
+            if tag["label"] == label:
+                return tag["id"]
+        response = self._session.post(f"{self._base}/api/v3/tag", json={"label": label}, timeout=30)
+        response.raise_for_status()
+        return response.json()["id"]
+
     def lookup(self, titles: list[str], year: int) -> dict | None:
         for title in titles:
             response = self._session.get(
@@ -37,7 +47,9 @@ class RadarrClient:
                 return results[0]
         return None
 
-    def add(self, movie: dict, root_folder: str, quality_profile_id: int) -> None:
+    def add(
+        self, movie: dict, root_folder: str, quality_profile_id: int, tag_id: int | None = None
+    ) -> None:
         payload = {
             "title": movie["title"],
             "year": movie.get("year"),
@@ -45,6 +57,7 @@ class RadarrClient:
             "qualityProfileId": quality_profile_id,
             "rootFolderPath": root_folder,
             "monitored": True,
+            "tags": [tag_id] if tag_id is not None else [],
             "addOptions": {"searchForMovie": True},
         }
         response = self._session.post(f"{self._base}/api/v3/movie", json=payload, timeout=30)

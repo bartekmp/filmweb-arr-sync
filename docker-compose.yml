@@ -2,6 +2,8 @@ services:
   filmweb-arr-sync:
     image: ghcr.io/bartekmp/filmweb-arr-sync:latest
     restart: unless-stopped
+    ports:
+      - "8080:8080"  # Expose health check endpoint
     volumes:
       - filmweb_sync_data:/data
       # Uncomment to use a config file instead of environment variables:
@@ -14,6 +16,7 @@ services:
       RADARR_ROOT_FOLDER: /movies
       RADARR_QUALITY_PROFILE_ID: 1
       # RADARR_ENABLED: "false"  # Set to false to disable Radarr sync
+      # RADARR_TAG: filmweb       # Tag applied to added movies; set to "" to disable
 
       SONARR_URL: http://sonarr:8989
       SONARR_API_KEY: your_sonarr_api_key
@@ -21,6 +24,7 @@ services:
       SONARR_QUALITY_PROFILE_ID: 1
       # SONARR_LANGUAGE_PROFILE_ID: 1  # Sonarr v3 only
       # SONARR_ENABLED: "false"  # Set to false to disable Sonarr sync
+      # SONARR_TAG: filmweb       # Tag applied to added shows; set to "" to disable
 
       SYNC_INTERVAL_MINUTES: 30
       ADD_DELAY_SECONDS: 5

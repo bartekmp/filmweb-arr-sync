@@ -92,18 +92,59 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `RADARR_ROOT_FOLDER` | Yes* | `/movies` | Root folder path configured in Radarr |
 | `RADARR_QUALITY_PROFILE_ID` | No | `1` | Radarr quality profile ID |
 | `RADARR_ENABLED` | No | `true` | Set to `false` to disable Radarr sync |
+| `RADARR_TAG` | No | `filmweb` | Tag applied to every added movie; set to `""` to disable |
 | `SONARR_URL` | Yes* | — | Sonarr base URL, e.g. `http://sonarr:8989` |
 | `SONARR_API_KEY` | Yes* | — | Sonarr API key (Settings → General) |
 | `SONARR_ROOT_FOLDER` | Yes* | `/tv` | Root folder path configured in Sonarr |
 | `SONARR_QUALITY_PROFILE_ID` | No | `1` | Sonarr quality profile ID |
 | `SONARR_LANGUAGE_PROFILE_ID` | No | — | Sonarr v3 only; omit for Sonarr v4 |
 | `SONARR_ENABLED` | No | `true` | Set to `false` to disable Sonarr sync |
+| `SONARR_TAG` | No | `filmweb` | Tag applied to every added show; set to `""` to disable |
 | `SYNC_INTERVAL_MINUTES` | No | `30` | How often to poll Filmweb (daemon mode) |
 | `SYNC_DRY_RUN` | No | `false` | Log what would be added without making changes |
 | `ADD_DELAY_SECONDS` | No | `5` | Seconds to wait between adding items to Radarr/Sonarr |
 | `STATE_FILE` | No | `/data/state.json` | Path to the state file |
 
 *Required only if the respective service is enabled.
+
+### Tagging
+
+By default every movie and show added by this tool is tagged `filmweb` in Radarr/Sonarr. The tag is created automatically if it doesn't exist. This lets you filter, manage, or bulk-delete the items later using Radarr/Sonarr's built-in tag filters.
+
+To use a different tag name:
+```
+RADARR_TAG: my-watchlist
+SONARR_TAG: my-watchlist
+```
+
+To disable tagging entirely, set the variable to an empty string:
+```
+RADARR_TAG: ""
+SONARR_TAG: ""
+```
+
+---
+
+### Health check
+
+The daemon exposes a lightweight HTTP endpoint on port **8080**:
+
+```
+GET http://localhost:8080/health
+```
+
+Response (always `200 OK`):
+```json
+{"status": "ok", "last_sync_at": "2026-05-24T19:00:47+00:00"}
+```
+
+`last_sync_at` is `null` until the first sync completes. The Docker image includes a `HEALTHCHECK` directive that polls this endpoint every 60 seconds, so container orchestration tools (Compose, Portainer, Uptime Kuma) will report the container as healthy once it is running.
+
+To expose the port externally, uncomment the `ports` entry in `docker-compose.yml`.
+
+> **Note:** The health endpoint is only started in daemon mode. It is not available when using `--run-once`.
+
+---
 
 ### Finding quality profile IDs
 
@@ -179,12 +220,13 @@ filmweb_arr_sync/
 ├── config.py      — loads config from YAML and environment variables
 ├── state.py       — JSON state file (tracks processed Filmweb IDs)
 ├── sync.py        — two-phase sync orchestration (lookup → add)
-├── scheduler.py   — daemon loop
+├── scheduler.py   — daemon loop with graceful SIGTERM/SIGINT shutdown
+├── health.py      — HTTP health check server (:8080/health)
 ├── filmweb/
 │   ├── client.py  — Filmweb public API client
 │   └── models.py  — FilmwebItem dataclass
 └── arr/
     ├── radarr.py  — Radarr REST API client
     └── sonarr.py  — Sonarr REST API client
-tests/             — pytest unit tests (77 tests, no network required)
+tests/             — pytest unit tests (no network required)
 ```

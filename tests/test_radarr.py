@@ -28,6 +28,23 @@ class TestGetExistingTmdbIds:
             assert client.get_existing_tmdb_ids() == set()
 
 
+class TestEnsureTag:
+    def test_returns_existing_tag_id(self, client):
+        tags = [{"id": 3, "label": "other"}, {"id": 5, "label": "filmweb"}]
+        with patch.object(client._session, "get", return_value=mock_response(tags)):
+            assert client.ensure_tag("filmweb") == 5
+
+    def test_creates_tag_when_not_found(self, client):
+        with (
+            patch.object(client._session, "get", return_value=mock_response([])),
+            patch.object(
+                client._session, "post", return_value=mock_response({"id": 7, "label": "filmweb"})
+            ) as mock_post,
+        ):
+            assert client.ensure_tag("filmweb") == 7
+        assert mock_post.call_args.kwargs["json"] == {"label": "filmweb"}
+
+
 class TestLookup:
     def test_returns_first_result(self, client):
         results = [{"title": "Movie A", "tmdbId": 100}, {"title": "Movie B", "tmdbId": 200}]

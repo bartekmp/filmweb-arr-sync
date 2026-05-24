@@ -1,7 +1,9 @@
 import logging
 import signal
 import threading
+from datetime import UTC, datetime
 
+from . import health
 from .sync import Syncer
 
 logger = logging.getLogger(__name__)
@@ -10,6 +12,7 @@ logger = logging.getLogger(__name__)
 def run_scheduler(syncer: Syncer, interval_minutes: int) -> None:
     interval_seconds = interval_minutes * 60
     logger.info("Daemon started — syncing every %d minutes", interval_minutes)
+    health.start()
 
     shutdown = threading.Event()
 
@@ -23,6 +26,7 @@ def run_scheduler(syncer: Syncer, interval_minutes: int) -> None:
     while not shutdown.is_set():
         try:
             syncer.run()
+            health.set_last_sync(datetime.now(UTC).isoformat())
         except Exception as e:
             logger.error("Sync failed with unexpected error: %s", e, exc_info=True)
 

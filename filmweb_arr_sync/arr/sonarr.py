@@ -24,6 +24,16 @@ class SonarrClient:
         response.raise_for_status()
         return {s["tvdbId"] for s in response.json()}
 
+    def ensure_tag(self, label: str) -> int:
+        response = self._session.get(f"{self._base}/api/v3/tag", timeout=30)
+        response.raise_for_status()
+        for tag in response.json():
+            if tag["label"] == label:
+                return tag["id"]
+        response = self._session.post(f"{self._base}/api/v3/tag", json={"label": label}, timeout=30)
+        response.raise_for_status()
+        return response.json()["id"]
+
     def lookup(self, titles: list[str], year: int) -> dict | None:
         for title in titles:
             response = self._session.get(
@@ -43,6 +53,7 @@ class SonarrClient:
         root_folder: str,
         quality_profile_id: int,
         language_profile_id: int | None = None,
+        tag_id: int | None = None,
     ) -> None:
         payload = {
             "title": series["title"],
@@ -52,6 +63,7 @@ class SonarrClient:
             "monitored": True,
             "seasonFolder": True,
             "seasons": series.get("seasons", []),
+            "tags": [tag_id] if tag_id is not None else [],
             "addOptions": {"searchForMissingEpisodes": True},
         }
         # languageProfileId is required by Sonarr v3 but ignored by v4

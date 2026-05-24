@@ -42,6 +42,15 @@ class Syncer:
 
         logger.info("Sync complete")
 
+    def _resolve_tag(self, client: RadarrClient | SonarrClient, tag_name: str) -> int | None:
+        if not tag_name:
+            return None
+        try:
+            return client.ensure_tag(tag_name)
+        except Exception as e:
+            logger.warning("Could not resolve tag '%s': %s — adding without tag", tag_name, e)
+            return None
+
     # --- movies ---
 
     def _sync_movies(self) -> None:
@@ -70,12 +79,14 @@ class Syncer:
         if not pending:
             return
 
+        tag_id = self._resolve_tag(self._radarr, self._config.radarr.tag)  # type: ignore[arg-type]
+
         # Phase 2: add collected items one by one with a delay between each
         logger.info(
             "Adding %d movie(s) to Radarr (delay=%ds between each)", len(pending), self._add_delay
         )
         for i, (item, result) in enumerate(pending):
-            self._add_movie(item, result)
+            self._add_movie(item, result, tag_id)
             if i < len(pending) - 1:
                 time.sleep(self._add_delay)
 
@@ -111,13 +122,16 @@ class Syncer:
 
         return result
 
-    def _add_movie(self, item: FilmwebItem, result: dict) -> None:
+    def _add_movie(self, item: FilmwebItem, result: dict, tag_id: int | None = None) -> None:
         matched_title: str = result.get("title", item.search_titles[0])
         tmdb_id: int = result.get("tmdbId", 0)
         try:
-            self._radarr.add(
-                result, self._config.radarr.root_folder, self._config.radarr.quality_profile_id
-            )  # type: ignore[union-attr]
+            self._radarr.add(  # type: ignore[union-attr]
+                result,
+                self._config.radarr.root_folder,
+                self._config.radarr.quality_profile_id,
+                tag_id=tag_id,
+            )
             logger.info(
                 "Added to Radarr: %s (tmdbId=%d)", matched_title, tmdb_id, extra={"status": "ok"}
             )
@@ -153,12 +167,14 @@ class Syncer:
         if not pending:
             return
 
+        tag_id = self._resolve_tag(self._sonarr, self._config.sonarr.tag)  # type: ignore[arg-type]
+
         # Phase 2: add collected items one by one with a delay between each
         logger.info(
             "Adding %d serial(s) to Sonarr (delay=%ds between each)", len(pending), self._add_delay
         )
         for i, (item, result) in enumerate(pending):
-            self._add_serial(item, result)
+            self._add_serial(item, result, tag_id)
             if i < len(pending) - 1:
                 time.sleep(self._add_delay)
 
@@ -194,7 +210,7 @@ class Syncer:
 
         return result
 
-    def _add_serial(self, item: FilmwebItem, result: dict) -> None:
+    def _add_serial(self, item: FilmwebItem, result: dict, tag_id: int | None = None) -> None:
         matched_title: str = result.get("title", item.search_titles[0])
         tvdb_id: int = result.get("tvdbId", 0)
         try:
@@ -202,7 +218,8 @@ class Syncer:
                 result,
                 self._config.sonarr.root_folder,
                 self._config.sonarr.quality_profile_id,
-                self._config.sonarr.language_profile_id,
+                language_profile_id=self._config.sonarr.language_profile_id,
+                tag_id=tag_id,
             )
             logger.info(
                 "Added to Sonarr: %s (tvdbId=%d)", matched_title, tvdb_id, extra={"status": "ok"}
