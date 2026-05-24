@@ -1,8 +1,12 @@
 import logging
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
+
+_RETRY = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
 
 
 class SonarrClient:
@@ -11,6 +15,9 @@ class SonarrClient:
         self._session = requests.Session()
         self._session.params["apikey"] = api_key  # type: ignore[assignment]
         self._session.headers["Content-Type"] = "application/json"
+        adapter = HTTPAdapter(max_retries=_RETRY)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
 
     def get_existing_tvdb_ids(self) -> set[int]:
         response = self._session.get(f"{self._base}/api/v3/series", timeout=30)

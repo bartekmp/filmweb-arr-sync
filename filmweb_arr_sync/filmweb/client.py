@@ -2,6 +2,8 @@ import logging
 import time
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from .models import FilmwebItem
 
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 _BASE = "https://www.filmweb.pl"
 _INFO_DELAY = 0.5  # seconds between /info calls to avoid rate limiting
+_RETRY = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
 
 
 class FilmwebClient:
@@ -21,6 +24,9 @@ class FilmwebClient:
                 "Accept": "application/json",
             }
         )
+        adapter = HTTPAdapter(max_retries=_RETRY)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
 
     def get_movies(self) -> list[FilmwebItem]:
         return self._fetch_watchlist("film")
@@ -38,8 +44,11 @@ class FilmwebClient:
         entries = response.json()
         logger.info("Filmweb returned %d %s(s) in want-to-see list", len(entries), item_type)
 
+        total = len(entries)
         items: list[FilmwebItem] = []
-        for entry in entries:
+        for i, entry in enumerate(entries):
+            if i % 10 == 0:
+                logger.info("⏳ Fetching %s details... (%d/%d)", item_type, i, total)
             filmweb_id: int = entry["entity"]
             item = self._fetch_item_info(filmweb_id, item_type)
             if item:

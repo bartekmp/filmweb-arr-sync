@@ -1,6 +1,6 @@
 services:
   filmweb-arr-sync:
-    build: .
+    image: ghcr.io/bartekmp/filmweb-arr-sync:latest
     restart: unless-stopped
     volumes:
       - filmweb_sync_data:/data
