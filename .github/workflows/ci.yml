@@ -65,7 +65,7 @@ jobs:
           cache: pip
       - name: Python Semantic Release
         id: semrel
-        uses: python-semantic-release/python-semantic-release@v9
+        uses: python-semantic-release/python-semantic-release@v10
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
