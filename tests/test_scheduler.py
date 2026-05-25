@@ -4,7 +4,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from filmweb_arr_sync.config import Config, FilmwebConfig, RadarrConfig, SonarrConfig, SyncConfig
 from filmweb_arr_sync.scheduler import run_scheduler
+
+
+def _make_config(interval_minutes: int = 30, cron: str | None = None) -> Config:
+    return Config(
+        filmweb=FilmwebConfig(username="testuser"),
+        radarr=RadarrConfig(url="", api_key="", root_folder=""),
+        sonarr=SonarrConfig(url="", api_key="", root_folder=""),
+        sync=SyncConfig(interval_minutes=interval_minutes, cron=cron),
+    )
 
 
 @pytest.fixture
@@ -42,7 +52,7 @@ class TestRunScheduler:
         event.is_set.side_effect = _shutdown_after(2)
 
         with patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event):
-            run_scheduler(syncer, interval_minutes=30)
+            run_scheduler(syncer, _make_config(interval_minutes=30))
 
         syncer.run.assert_called_once()
 
@@ -51,7 +61,7 @@ class TestRunScheduler:
         event.is_set.side_effect = _shutdown_after(2)
 
         with patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event):
-            run_scheduler(syncer, interval_minutes=15)
+            run_scheduler(syncer, _make_config(interval_minutes=15))
 
         event.wait.assert_called_with(timeout=900)
 
@@ -60,7 +70,7 @@ class TestRunScheduler:
         event.is_set.side_effect = _shutdown_after(6)  # 3 cycles × 2 calls each
 
         with patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event):
-            run_scheduler(syncer, interval_minutes=5)
+            run_scheduler(syncer, _make_config(interval_minutes=5))
 
         assert syncer.run.call_count == 3
 
@@ -70,7 +80,7 @@ class TestRunScheduler:
         event.is_set.side_effect = _shutdown_after(4)  # 2 cycles × 2 calls each
 
         with patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event):
-            run_scheduler(syncer, interval_minutes=5)
+            run_scheduler(syncer, _make_config(interval_minutes=5))
 
         assert syncer.run.call_count == 2
 
@@ -82,7 +92,7 @@ class TestRunScheduler:
             patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event),
             patch("filmweb_arr_sync.scheduler.signal.signal") as mock_signal,
         ):
-            run_scheduler(syncer, interval_minutes=30)
+            run_scheduler(syncer, _make_config(interval_minutes=30))
 
         registered = {c[0][0] for c in mock_signal.call_args_list}
         assert signal.SIGTERM in registered
@@ -95,7 +105,23 @@ class TestRunScheduler:
         event.is_set.side_effect = _shutdown_after(1)
 
         with patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event):
-            run_scheduler(syncer, interval_minutes=30)
+            run_scheduler(syncer, _make_config(interval_minutes=30))
 
         syncer.run.assert_called_once()
         event.wait.assert_not_called()
+
+    def test_cron_uses_next_trigger_as_wait_duration(self, syncer):
+        event = MagicMock(spec=threading.Event)
+        event.is_set.side_effect = _shutdown_after(2)
+
+        with (
+            patch("filmweb_arr_sync.scheduler.threading.Event", return_value=event),
+            patch("filmweb_arr_sync.scheduler._next_cron_wait", return_value=(3600.0, MagicMock())),
+        ):
+            run_scheduler(syncer, _make_config(cron="0 * * * *"))
+
+        event.wait.assert_called_with(timeout=3600.0)
+
+    def test_cron_invalid_expression_exits(self, syncer):
+        with pytest.raises(SystemExit):
+            run_scheduler(syncer, _make_config(cron="not-a-cron"))

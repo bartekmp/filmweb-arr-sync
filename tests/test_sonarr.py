@@ -76,7 +76,7 @@ class TestAdd:
         assert payload["qualityProfileId"] == 1
         assert payload["monitored"] is True
         assert payload["seasonFolder"] is True
-        assert payload["addOptions"]["searchForMissingEpisodes"] is True
+        assert payload["addOptions"]["searchForMissingEpisodes"] is False
 
     def test_includes_language_profile_id_when_provided(self, client):
         series = {"title": "T", "tvdbId": 1, "seasons": []}

@@ -33,6 +33,7 @@ class SonarrConfig:
 @dataclass
 class SyncConfig:
     interval_minutes: int = 30
+    cron: str | None = None
     dry_run: bool = False
     state_file: str = "/data/state.json"
     add_delay_seconds: int = 5
@@ -113,6 +114,7 @@ def load_config(config_file: str = "config.yaml") -> Config:
         ),
         sync=SyncConfig(
             interval_minutes=_env_int("SYNC_INTERVAL_MINUTES", sy.get("interval_minutes", 30)),
+            cron=_env_str("SYNC_CRON", sy.get("cron", "")) or None,
             dry_run=_env_bool("SYNC_DRY_RUN", sy.get("dry_run", False)),
             state_file=_env_str("STATE_FILE", sy.get("state_file", "/data/state.json")),
             add_delay_seconds=_env_int("ADD_DELAY_SECONDS", sy.get("add_delay_seconds", 5)),
