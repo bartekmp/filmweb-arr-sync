@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 
 from .arr.radarr import RadarrClient
@@ -26,6 +27,13 @@ class Syncer:
         self._sonarr: SonarrClient | None = None
         if config.sonarr.enabled and config.sonarr.url and config.sonarr.api_key:
             self._sonarr = SonarrClient(config.sonarr.url, config.sonarr.api_key)
+
+    def start_batch_processor(self, shutdown: threading.Event) -> None:
+        if not self._config.sync.batch_queue_enabled:
+            return
+        from .batch_processor import BatchProcessor
+
+        BatchProcessor(self._config, self._state, self._radarr, self._sonarr, shutdown).start()
 
     def run(self) -> None:
         logger.info("Starting sync (dry_run=%s)", self._dry_run)
@@ -79,16 +87,22 @@ class Syncer:
         if not pending:
             return
 
-        tag_id = self._resolve_tag(self._radarr, self._config.radarr.tag)  # type: ignore[arg-type]
-
-        # Phase 2: add collected items one by one with a delay between each
-        logger.info(
-            "Adding %d movie(s) to Radarr (delay=%ds between each)", len(pending), self._add_delay
-        )
-        for i, (item, result) in enumerate(pending):
-            self._add_movie(item, result, tag_id)
-            if i < len(pending) - 1:
-                time.sleep(self._add_delay)
+        # Phase 2: enqueue for background processing, or add immediately
+        if self._config.sync.batch_queue_enabled:
+            for item, result in pending:
+                self._state.enqueue_film(item.filmweb_id, result)
+            logger.info("Enqueued %d movie(s) for batch processing", len(pending))
+        else:
+            tag_id = self._resolve_tag(self._radarr, self._config.radarr.tag)  # type: ignore[arg-type]
+            logger.info(
+                "Adding %d movie(s) to Radarr (delay=%ds between each)",
+                len(pending),
+                self._add_delay,
+            )
+            for i, (item, result) in enumerate(pending):
+                self._add_movie(item, result, tag_id)
+                if i < len(pending) - 1:
+                    time.sleep(self._add_delay)
 
     def _lookup_movie(self, item: FilmwebItem, existing_tmdb_ids: set[int]) -> dict | None:
         """Look up one movie. Returns the Radarr result if it needs adding, None otherwise."""
@@ -167,16 +181,22 @@ class Syncer:
         if not pending:
             return
 
-        tag_id = self._resolve_tag(self._sonarr, self._config.sonarr.tag)  # type: ignore[arg-type]
-
-        # Phase 2: add collected items one by one with a delay between each
-        logger.info(
-            "Adding %d serial(s) to Sonarr (delay=%ds between each)", len(pending), self._add_delay
-        )
-        for i, (item, result) in enumerate(pending):
-            self._add_serial(item, result, tag_id)
-            if i < len(pending) - 1:
-                time.sleep(self._add_delay)
+        # Phase 2: enqueue for background processing, or add immediately
+        if self._config.sync.batch_queue_enabled:
+            for item, result in pending:
+                self._state.enqueue_serial(item.filmweb_id, result)
+            logger.info("Enqueued %d serial(s) for batch processing", len(pending))
+        else:
+            tag_id = self._resolve_tag(self._sonarr, self._config.sonarr.tag)  # type: ignore[arg-type]
+            logger.info(
+                "Adding %d serial(s) to Sonarr (delay=%ds between each)",
+                len(pending),
+                self._add_delay,
+            )
+            for i, (item, result) in enumerate(pending):
+                self._add_serial(item, result, tag_id)
+                if i < len(pending) - 1:
+                    time.sleep(self._add_delay)
 
     def _lookup_serial(self, item: FilmwebItem, existing_tvdb_ids: set[int]) -> dict | None:
         """Look up one serial. Returns the Sonarr result if it needs adding, None otherwise."""

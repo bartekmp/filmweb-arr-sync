@@ -20,4 +20,9 @@ sync:
   interval_minutes: 30
   dry_run: false
   state_file: /data/state.json
-  add_delay_seconds: 5  # seconds to wait between adding items to Radarr/Sonarr
+  add_delay_seconds: 5  # seconds to wait between adding items (non-batch mode only)
+
+  # Batch queue — spreads additions over time to avoid overwhelming Radarr/Sonarr
+  # batch_queue_enabled: false
+  # batch_size: 5           # items added per batch
+  # batch_interval_minutes: 10  # minutes to wait between batches

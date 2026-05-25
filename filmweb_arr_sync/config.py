@@ -36,6 +36,9 @@ class SyncConfig:
     dry_run: bool = False
     state_file: str = "/data/state.json"
     add_delay_seconds: int = 5
+    batch_queue_enabled: bool = False
+    batch_size: int = 5
+    batch_interval_minutes: int = 10
 
 
 @dataclass
@@ -113,5 +116,12 @@ def load_config(config_file: str = "config.yaml") -> Config:
             dry_run=_env_bool("SYNC_DRY_RUN", sy.get("dry_run", False)),
             state_file=_env_str("STATE_FILE", sy.get("state_file", "/data/state.json")),
             add_delay_seconds=_env_int("ADD_DELAY_SECONDS", sy.get("add_delay_seconds", 5)),
+            batch_queue_enabled=_env_bool(
+                "BATCH_QUEUE_ENABLED", sy.get("batch_queue_enabled", False)
+            ),
+            batch_size=_env_int("BATCH_SIZE", sy.get("batch_size", 5)),
+            batch_interval_minutes=_env_int(
+                "BATCH_INTERVAL_MINUTES", sy.get("batch_interval_minutes", 10)
+            ),
         ),
     )
