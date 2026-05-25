@@ -45,6 +45,11 @@ def _log_startup_config(config: Config, run_once: bool) -> None:
     ]
     if not run_once:
         lines.append(f"  Sync interval   : {config.sync.interval_minutes} min")
+    if config.sync.batch_queue_enabled:
+        lines.append(
+            f"  Batch queue     : enabled"
+            f" ({config.sync.batch_size} items / {config.sync.batch_interval_minutes} min)"
+        )
     if config.sync.dry_run:
         lines.append("  Dry run         : yes")
 

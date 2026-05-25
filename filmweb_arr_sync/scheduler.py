@@ -15,6 +15,7 @@ def run_scheduler(syncer: Syncer, interval_minutes: int) -> None:
     health.start()
 
     shutdown = threading.Event()
+    syncer.start_batch_processor(shutdown)
 
     def _handle_signal(signum: int, frame: object) -> None:
         logger.info("Shutdown signal received, stopping after current sync...")

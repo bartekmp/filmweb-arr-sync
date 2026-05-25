@@ -54,21 +54,24 @@ class SonarrClient:
         quality_profile_id: int,
         language_profile_id: int | None = None,
         tag_id: int | None = None,
+        search: bool = False,
     ) -> None:
         payload = {
-            "title": series["title"],
-            "tvdbId": series["tvdbId"],
+            **{k: v for k, v in series.items() if k != "id"},
             "qualityProfileId": quality_profile_id,
             "rootFolderPath": root_folder,
             "monitored": True,
             "seasonFolder": True,
-            "seasons": series.get("seasons", []),
             "tags": [tag_id] if tag_id is not None else [],
-            "addOptions": {"searchForMissingEpisodes": True},
+            "addOptions": {"searchForMissingEpisodes": search},
         }
         # languageProfileId is required by Sonarr v3 but ignored by v4
         if language_profile_id is not None:
             payload["languageProfileId"] = language_profile_id
 
         response = self._session.post(f"{self._base}/api/v3/series", json=payload, timeout=30)
+        if not response.ok:
+            logger.error(
+                "Sonarr rejected add for '%s': %s", series.get("title"), response.text[:500]
+            )
         response.raise_for_status()

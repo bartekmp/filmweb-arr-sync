@@ -48,17 +48,24 @@ class RadarrClient:
         return None
 
     def add(
-        self, movie: dict, root_folder: str, quality_profile_id: int, tag_id: int | None = None
+        self,
+        movie: dict,
+        root_folder: str,
+        quality_profile_id: int,
+        tag_id: int | None = None,
+        search: bool = False,
     ) -> None:
         payload = {
-            "title": movie["title"],
-            "year": movie.get("year"),
-            "tmdbId": movie["tmdbId"],
+            **{k: v for k, v in movie.items() if k != "id"},
             "qualityProfileId": quality_profile_id,
             "rootFolderPath": root_folder,
             "monitored": True,
             "tags": [tag_id] if tag_id is not None else [],
-            "addOptions": {"searchForMovie": True},
+            "addOptions": {"searchForMovie": search},
         }
         response = self._session.post(f"{self._base}/api/v3/movie", json=payload, timeout=30)
+        if not response.ok:
+            logger.error(
+                "Radarr rejected add for '%s': %s", movie.get("title"), response.text[:500]
+            )
         response.raise_for_status()

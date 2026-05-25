@@ -74,7 +74,7 @@ Then:
 docker compose up -d filmweb-arr-sync
 ```
 
-> **First run tip:** if you have a large watchlist (100+ items), set `ADD_DELAY_SECONDS` to `10`–`15` for the initial import so Radarr/Sonarr are not overwhelmed. You can lower it once the bulk import is done.
+> **First run tip:** if you have a large watchlist (100+ items), consider enabling batch queue mode (`BATCH_QUEUE_ENABLED=true`) so Radarr/Sonarr are not overwhelmed during the initial import. See [Batch queue](#batch-queue) below.
 
 ---
 
@@ -102,8 +102,11 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `SONARR_TAG` | No | `filmweb` | Tag applied to every added show; set to `""` to disable |
 | `SYNC_INTERVAL_MINUTES` | No | `30` | How often to poll Filmweb (daemon mode) |
 | `SYNC_DRY_RUN` | No | `false` | Log what would be added without making changes |
-| `ADD_DELAY_SECONDS` | No | `5` | Seconds to wait between adding items to Radarr/Sonarr |
+| `ADD_DELAY_SECONDS` | No | `5` | Seconds to wait between adding items (non-batch mode only) |
 | `STATE_FILE` | No | `/data/state.json` | Path to the state file |
+| `BATCH_QUEUE_ENABLED` | No | `false` | Enable batch queue mode (see below) |
+| `BATCH_SIZE` | No | `5` | Items added per batch (batch mode only) |
+| `BATCH_INTERVAL_MINUTES` | No | `10` | Minutes to wait between batches (batch mode only) |
 
 *Required only if the respective service is enabled.
 
@@ -122,6 +125,28 @@ To disable tagging entirely, set the variable to an empty string:
 RADARR_TAG: ""
 SONARR_TAG: ""
 ```
+
+---
+
+### Batch queue
+
+By default the sync adds every new item immediately, one by one, with `ADD_DELAY_SECONDS` between each. On a large watchlist this can still send dozens of requests in a short window and cause Radarr/Sonarr to queue a lot of searches at once.
+
+Batch queue mode spreads additions out over time. Enable it with:
+
+```
+BATCH_QUEUE_ENABLED=true
+BATCH_SIZE=5           # how many items to add per batch (default: 5)
+BATCH_INTERVAL_MINUTES=10  # minutes to wait between batches (default: 10)
+```
+
+How it works:
+
+- Each sync cycle only does the **lookup** phase and puts new matches into a persistent queue in the state file
+- A background thread processes the queue: adds `BATCH_SIZE` items, sleeps `BATCH_INTERVAL_MINUTES`, then repeats until the queue is empty
+- The sync interval (`SYNC_INTERVAL_MINUTES`) is completely unaffected — the background thread runs independently
+- The queue is persisted to disk, so a container restart picks up where it left off
+- Items that fail to add are **not** marked as processed and will be re-queued on the next sync (same behaviour as the default mode)
 
 ---
 
@@ -216,12 +241,13 @@ rm data/state.json
 
 ```
 filmweb_arr_sync/
-├── __main__.py    — CLI entry point (also enables python -m filmweb_arr_sync)
-├── config.py      — loads config from YAML and environment variables
-├── state.py       — JSON state file (tracks processed Filmweb IDs)
-├── sync.py        — two-phase sync orchestration (lookup → add)
-├── scheduler.py   — daemon loop with graceful SIGTERM/SIGINT shutdown
-├── health.py      — HTTP health check server (:8080/health)
+├── __main__.py         — CLI entry point (also enables python -m filmweb_arr_sync)
+├── config.py           — loads config from YAML and environment variables
+├── state.py            — JSON state file (tracks processed and pending Filmweb IDs)
+├── sync.py             — two-phase sync orchestration (lookup → add / enqueue)
+├── batch_processor.py  — background thread for batch queue mode
+├── scheduler.py        — daemon loop with graceful SIGTERM/SIGINT shutdown
+├── health.py           — HTTP health check server (:8080/health)
 ├── filmweb/
 │   ├── client.py  — Filmweb public API client
 │   └── models.py  — FilmwebItem dataclass

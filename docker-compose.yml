@@ -31,5 +31,10 @@ services:
       # STATE_FILE: /data/state.json  # Override default state file location
       # SYNC_DRY_RUN: "true"  # Uncomment to preview without making changes
 
+      # Batch queue — spreads additions over time to avoid overwhelming Radarr/Sonarr
+      # BATCH_QUEUE_ENABLED: "true"
+      # BATCH_SIZE: 5
+      # BATCH_INTERVAL_MINUTES: 10
+
 volumes:
   filmweb_sync_data:
