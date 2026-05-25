@@ -2,7 +2,7 @@
 
 Watches a [Filmweb.pl](https://www.filmweb.pl) user's **"Want to See"** list and automatically adds new entries to [Radarr](https://radarr.video) (movies) and [Sonarr](https://sonarr.tv) (TV series).
 
-Runs as a daemon on a configurable interval, or as a one-shot CLI command. Designed for homelab Docker Compose stacks.
+Runs as a daemon on a configurable interval or cron schedule, or as a one-shot CLI command. Designed for homelab Docker Compose stacks.
 
 ---
 
@@ -100,7 +100,8 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `SONARR_LANGUAGE_PROFILE_ID` | No | — | Sonarr v3 only; omit for Sonarr v4 |
 | `SONARR_ENABLED` | No | `true` | Set to `false` to disable Sonarr sync |
 | `SONARR_TAG` | No | `filmweb` | Tag applied to every added show; set to `""` to disable |
-| `SYNC_INTERVAL_MINUTES` | No | `30` | How often to poll Filmweb (daemon mode) |
+| `SYNC_INTERVAL_MINUTES` | No | `30` | How often to poll Filmweb; ignored when `SYNC_CRON` is set |
+| `SYNC_CRON` | No | — | Cron expression for sync schedule, e.g. `0 4 * * *` (takes precedence over `SYNC_INTERVAL_MINUTES`) |
 | `SYNC_DRY_RUN` | No | `false` | Log what would be added without making changes |
 | `ADD_DELAY_SECONDS` | No | `5` | Seconds to wait between adding items (non-batch mode only) |
 | `STATE_FILE` | No | `/data/state.json` | Path to the state file |

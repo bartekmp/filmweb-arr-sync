@@ -84,7 +84,7 @@ class TestAdd:
         assert payload["rootFolderPath"] == "/movies"
         assert payload["qualityProfileId"] == 2
         assert payload["monitored"] is True
-        assert payload["addOptions"]["searchForMovie"] is True
+        assert payload["addOptions"]["searchForMovie"] is False
 
     def test_posts_to_correct_endpoint(self, client):
         movie = {"title": "T", "year": 2023, "tmdbId": 1}

@@ -44,7 +44,10 @@ def _log_startup_config(config: Config, run_once: bool) -> None:
         f"  Add delay       : {config.sync.add_delay_seconds}s",
     ]
     if not run_once:
-        lines.append(f"  Sync interval   : {config.sync.interval_minutes} min")
+        if config.sync.cron:
+            lines.append(f"  Sync schedule   : {config.sync.cron} (cron)")
+        else:
+            lines.append(f"  Sync interval   : {config.sync.interval_minutes} min")
     if config.sync.batch_queue_enabled:
         lines.append(
             f"  Batch queue     : enabled"
@@ -125,7 +128,7 @@ def main() -> None:
     if args.run_once:
         syncer.run()
     else:
-        run_scheduler(syncer, config.sync.interval_minutes)
+        run_scheduler(syncer, config)
 
 
 if __name__ == "__main__":

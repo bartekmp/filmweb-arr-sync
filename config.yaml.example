@@ -17,7 +17,8 @@ sonarr:
   enabled: true
 
 sync:
-  interval_minutes: 30
+  interval_minutes: 30  # ignored when cron is set
+  # cron: "0 4 * * *"  # optional: run at a fixed time instead of every N minutes
   dry_run: false
   state_file: /data/state.json
   add_delay_seconds: 5  # seconds to wait between adding items (non-batch mode only)

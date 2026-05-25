@@ -26,7 +26,8 @@ services:
       # SONARR_ENABLED: "false"  # Set to false to disable Sonarr sync
       # SONARR_TAG: filmweb       # Tag applied to added shows; set to "" to disable
 
-      SYNC_INTERVAL_MINUTES: 30
+      SYNC_INTERVAL_MINUTES: 30  # ignored when SYNC_CRON is set
+      # SYNC_CRON: "0 4 * * *"  # optional: run at a fixed time instead of every N minutes
       ADD_DELAY_SECONDS: 5
       # STATE_FILE: /data/state.json  # Override default state file location
       # SYNC_DRY_RUN: "true"  # Uncomment to preview without making changes
