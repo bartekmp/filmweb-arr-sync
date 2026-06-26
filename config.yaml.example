@@ -27,3 +27,13 @@ sync:
   # batch_queue_enabled: false
   # batch_size: 5           # items added per batch
   # batch_interval_minutes: 10  # minutes to wait between batches
+
+# Telegram bot — send Filmweb/IMDb links to add titles on demand (daemon mode only)
+# telegram:
+#   enabled: true
+#   bot_token: "123456:ABC-your-bot-token-from-botfather"
+#   allowed_user_ids:        # numeric user IDs allowed to use the bot; omit for everyone
+#     - 11111111
+#     - 22222222
+#   search_on_add: true      # trigger a Radarr/Sonarr search immediately after adding
+#   poll_timeout_seconds: 30

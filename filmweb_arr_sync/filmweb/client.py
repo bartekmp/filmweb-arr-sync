@@ -34,6 +34,10 @@ class FilmwebClient:
     def get_serials(self) -> list[FilmwebItem]:
         return self._fetch_watchlist("serial")
 
+    def get_item(self, filmweb_id: int, item_type: str) -> FilmwebItem | None:
+        """Fetch info for a single title. item_type is 'film' or 'serial'."""
+        return self._fetch_item_info(filmweb_id, item_type)
+
     def _fetch_watchlist(self, item_type: str) -> list[FilmwebItem]:
         url = f"{_BASE}/api/v1/user/{self._username}/want2see/{item_type}"
         logger.debug("GET %s", url)

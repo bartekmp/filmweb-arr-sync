@@ -39,3 +39,8 @@ def start() -> None:
 def set_last_sync(timestamp: str) -> None:
     with _lock:
         _state["last_sync_at"] = timestamp
+
+
+def get_last_sync() -> str | None:
+    with _lock:
+        return _state["last_sync_at"]

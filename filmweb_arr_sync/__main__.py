@@ -78,6 +78,16 @@ def _log_startup_config(config: Config, run_once: bool) -> None:
     else:
         lines.append("  Sonarr          : disabled")
 
+    if config.telegram.enabled and config.telegram.bot_token:
+        scope = (
+            f"{len(config.telegram.allowed_user_ids)} allowed user(s)"
+            if config.telegram.allowed_user_ids
+            else "open to all users"
+        )
+        lines.append(f"  Telegram bot    : enabled ({scope})")
+    else:
+        lines.append("  Telegram bot    : disabled")
+
     lines.append("=" * 60)
     _startup_logger.info("\n".join(lines))
 

@@ -4,6 +4,8 @@ Watches a [Filmweb.pl](https://www.filmweb.pl) user's **"Want to See"** list and
 
 Runs as a daemon on a configurable interval or cron schedule, or as a one-shot CLI command. Designed for homelab Docker Compose stacks.
 
+Optionally runs a [**Telegram bot**](#telegram-bot) so you can add titles on demand by sending a Filmweb or IMDb link.
+
 ---
 
 ## How it works
@@ -108,8 +110,14 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `BATCH_QUEUE_ENABLED` | No | `false` | Enable batch queue mode (see below) |
 | `BATCH_SIZE` | No | `5` | Items added per batch (batch mode only) |
 | `BATCH_INTERVAL_MINUTES` | No | `10` | Minutes to wait between batches (batch mode only) |
+| `TELEGRAM_BOT_ENABLED` | No | `false` | Enable the Telegram bot (daemon mode only) |
+| `TELEGRAM_BOT_TOKEN` | Yes** | — | Bot token from [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_ALLOWED_USER_IDS` | No | — | Comma-separated numeric user IDs allowed to use the bot; empty = everyone |
+| `TELEGRAM_SEARCH_ON_ADD` | No | `true` | Trigger a Radarr/Sonarr search immediately after a bot add |
+| `TELEGRAM_POLL_TIMEOUT_SECONDS` | No | `30` | Long-poll timeout for fetching Telegram updates |
 
 *Required only if the respective service is enabled.
+**Required only if the Telegram bot is enabled.
 
 ### Tagging
 
@@ -148,6 +156,52 @@ How it works:
 - The sync interval (`SYNC_INTERVAL_MINUTES`) is completely unaffected — the background thread runs independently
 - The queue is persisted to disk, so a container restart picks up where it left off
 - Items that fail to add are **not** marked as processed and will be re-queued on the next sync (same behaviour as the default mode)
+
+---
+
+### Telegram bot
+
+In addition to the scheduled watchlist sync, the daemon can run a Telegram bot so you can add titles **on demand** by sending a link. Paste a Filmweb or IMDb link and the bot adds the movie to Radarr or the series to Sonarr.
+
+**Setup:**
+
+1. Message [@BotFather](https://t.me/BotFather) on Telegram, send `/newbot`, and copy the token it gives you.
+2. Find your numeric Telegram user ID (e.g. message [@userinfobot](https://t.me/userinfobot)).
+3. Enable the bot in your config:
+
+```
+TELEGRAM_BOT_ENABLED: "true"
+TELEGRAM_BOT_TOKEN: "123456:ABC-your-bot-token"
+TELEGRAM_ALLOWED_USER_IDS: "11111111"   # restrict to your own user ID
+```
+
+> **Restrict access.** Anyone who finds your bot can message it. Set `TELEGRAM_ALLOWED_USER_IDS` to your own ID (comma-separate multiple IDs) so only you can add titles. If left empty, the bot responds to everyone.
+
+**Usage:**
+
+Send the bot a link, for example:
+
+```
+https://www.filmweb.pl/film/Incepcja-2010-468741      → added to Radarr
+https://www.filmweb.pl/serial/Wiedzmin-2019-668941    → added to Sonarr
+https://www.imdb.com/title/tt1375666/                 → resolved and added
+```
+
+- **Filmweb links** carry the type (`/film/` → Radarr, `/serial/` → Sonarr); details are fetched from Filmweb's public API and matched the same way the scheduled sync does. Successfully added Filmweb IDs are recorded in the state file, so the scheduler won't add them again.
+- **IMDb links** don't say whether a title is a movie or a series, so the bot looks it up in Radarr first, then Sonarr.
+- Anything that isn't a recognised Filmweb or IMDb link is **rejected**.
+
+**Commands:**
+
+| Command | Description |
+|---|---|
+| `/help`, `/start` | Show usage |
+| `/last_sync` | When the scheduled watchlist sync last completed |
+| `/stats` | How many movies/series have been processed |
+
+> **Note:** The bot uses Telegram long-polling and only runs in daemon mode (not with `--run-once`). No inbound ports or webhooks are required.
+
+> **Filmweb watchlist write-back.** Adding a title back to your Filmweb "Want to see" list is **not yet implemented** — Filmweb has no official write API, so it requires an authenticated, undocumented endpoint. The bot has a pluggable hook (`filmweb_arr_sync/bot/watchlist.py`) where an authenticated implementation can be dropped in later; for now the bot adds to Radarr/Sonarr only.
 
 ---
 
@@ -252,8 +306,14 @@ filmweb_arr_sync/
 ├── filmweb/
 │   ├── client.py  — Filmweb public API client
 │   └── models.py  — FilmwebItem dataclass
-└── arr/
-    ├── radarr.py  — Radarr REST API client
-    └── sonarr.py  — Sonarr REST API client
+├── arr/
+│   ├── radarr.py  — Radarr REST API client
+│   └── sonarr.py  — Sonarr REST API client
+└── bot/
+    ├── runner.py     — Telegram long-polling loop (background thread)
+    ├── telegram.py   — minimal Telegram Bot API client
+    ├── handler.py    — message/command handling → Radarr/Sonarr adds
+    ├── links.py      — Filmweb/IMDb link parsing and validation
+    └── watchlist.py  — pluggable Filmweb watchlist write-back hook
 tests/             — pytest unit tests (no network required)
 ```

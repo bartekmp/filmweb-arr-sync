@@ -28,6 +28,22 @@ class Syncer:
         if config.sonarr.enabled and config.sonarr.url and config.sonarr.api_key:
             self._sonarr = SonarrClient(config.sonarr.url, config.sonarr.api_key)
 
+    @property
+    def state(self) -> State:
+        return self._state
+
+    @property
+    def filmweb(self) -> FilmwebClient:
+        return self._filmweb
+
+    @property
+    def radarr(self) -> RadarrClient | None:
+        return self._radarr
+
+    @property
+    def sonarr(self) -> SonarrClient | None:
+        return self._sonarr
+
     def start_batch_processor(self, shutdown: threading.Event) -> None:
         if not self._config.sync.batch_queue_enabled:
             return

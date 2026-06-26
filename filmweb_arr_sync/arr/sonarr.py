@@ -47,6 +47,16 @@ class SonarrClient:
                 return results[0]
         return None
 
+    def lookup_by_imdb(self, imdb_id: str) -> dict | None:
+        response = self._session.get(
+            f"{self._base}/api/v3/series/lookup",
+            params={"term": f"imdb:{imdb_id}"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        results = response.json()
+        return results[0] if results else None
+
     def add(
         self,
         series: dict,

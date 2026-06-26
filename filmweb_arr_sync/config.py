@@ -43,11 +43,21 @@ class SyncConfig:
 
 
 @dataclass
+class TelegramConfig:
+    enabled: bool = False
+    bot_token: str = ""
+    allowed_user_ids: list[int] = field(default_factory=list)
+    poll_timeout_seconds: int = 30
+    search_on_add: bool = True
+
+
+@dataclass
 class Config:
     filmweb: FilmwebConfig
     radarr: RadarrConfig
     sonarr: SonarrConfig
     sync: SyncConfig = field(default_factory=SyncConfig)
+    telegram: TelegramConfig = field(default_factory=TelegramConfig)
 
 
 def _env_bool(env_key: str, fallback: bool | str) -> bool:
@@ -74,6 +84,16 @@ def _env_str(env_key: str, fallback: str) -> str:
     return os.getenv(env_key, fallback)
 
 
+def _env_int_list(env_key: str, fallback: list | str | None) -> list[int]:
+    raw = os.getenv(env_key)
+    value = raw if raw is not None else fallback
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return [int(v) for v in value]
+    return [int(part.strip()) for part in str(value).split(",") if part.strip()]
+
+
 def load_config(config_file: str = "config.yaml") -> Config:
     raw: dict = {}
     if os.path.exists(config_file):
@@ -84,6 +104,7 @@ def load_config(config_file: str = "config.yaml") -> Config:
     ra = raw.get("radarr", {})
     so = raw.get("sonarr", {})
     sy = raw.get("sync", {})
+    tg = raw.get("telegram", {})
 
     return Config(
         filmweb=FilmwebConfig(
@@ -125,5 +146,16 @@ def load_config(config_file: str = "config.yaml") -> Config:
             batch_interval_minutes=_env_int(
                 "BATCH_INTERVAL_MINUTES", sy.get("batch_interval_minutes", 10)
             ),
+        ),
+        telegram=TelegramConfig(
+            enabled=_env_bool("TELEGRAM_BOT_ENABLED", tg.get("enabled", False)),
+            bot_token=_env_str("TELEGRAM_BOT_TOKEN", tg.get("bot_token", "")),
+            allowed_user_ids=_env_int_list(
+                "TELEGRAM_ALLOWED_USER_IDS", tg.get("allowed_user_ids")
+            ),
+            poll_timeout_seconds=_env_int(
+                "TELEGRAM_POLL_TIMEOUT_SECONDS", tg.get("poll_timeout_seconds", 30)
+            ),
+            search_on_add=_env_bool("TELEGRAM_SEARCH_ON_ADD", tg.get("search_on_add", True)),
         ),
     )
