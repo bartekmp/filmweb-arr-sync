@@ -223,9 +223,7 @@ class BotHandler:
             logger.warning("Lookup failed for %s: %s", item, e)
             return None
 
-    def _safe_lookup_imdb(
-        self, client: RadarrClient | SonarrClient, imdb_id: str
-    ) -> dict | None:
+    def _safe_lookup_imdb(self, client: RadarrClient | SonarrClient, imdb_id: str) -> dict | None:
         try:
             return client.lookup_by_imdb(imdb_id)
         except Exception as e:

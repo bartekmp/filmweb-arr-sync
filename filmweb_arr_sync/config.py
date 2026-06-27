@@ -150,9 +150,7 @@ def load_config(config_file: str = "config.yaml") -> Config:
         telegram=TelegramConfig(
             enabled=_env_bool("TELEGRAM_BOT_ENABLED", tg.get("enabled", False)),
             bot_token=_env_str("TELEGRAM_BOT_TOKEN", tg.get("bot_token", "")),
-            allowed_user_ids=_env_int_list(
-                "TELEGRAM_ALLOWED_USER_IDS", tg.get("allowed_user_ids")
-            ),
+            allowed_user_ids=_env_int_list("TELEGRAM_ALLOWED_USER_IDS", tg.get("allowed_user_ids")),
             poll_timeout_seconds=_env_int(
                 "TELEGRAM_POLL_TIMEOUT_SECONDS", tg.get("poll_timeout_seconds", 30)
             ),
