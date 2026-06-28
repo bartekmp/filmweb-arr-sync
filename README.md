@@ -201,7 +201,7 @@ https://www.imdb.com/title/tt1375666/                 → resolved and added
 
 > **Note:** The bot uses Telegram long-polling and only runs in daemon mode (not with `--run-once`). No inbound ports or webhooks are required.
 
-> **Filmweb watchlist write-back.** Adding a title back to your Filmweb "Want to see" list is **not yet implemented** — Filmweb has no official write API, so it requires an authenticated, undocumented endpoint. The bot has a pluggable hook (`filmweb_arr_sync/bot/watchlist.py`) where an authenticated implementation can be dropped in later; for now the bot adds to Radarr/Sonarr only.
+> **Filmweb watchlist write-back is not supported.** The bot adds titles to Radarr/Sonarr only — it does not add them back to your Filmweb "Want to see" list, as Filmweb has no public write API.
 
 ---
 
@@ -313,7 +313,6 @@ filmweb_arr_sync/
     ├── runner.py     — Telegram long-polling loop (background thread)
     ├── telegram.py   — minimal Telegram Bot API client
     ├── handler.py    — message/command handling → Radarr/Sonarr adds
-    ├── links.py      — Filmweb/IMDb link parsing and validation
-    └── watchlist.py  — pluggable Filmweb watchlist write-back hook
+    └── links.py      — Filmweb/IMDb link parsing and validation
 tests/             — pytest unit tests (no network required)
 ```

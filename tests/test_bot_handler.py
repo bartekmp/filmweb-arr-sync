@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from filmweb_arr_sync.bot.handler import BotHandler
-from filmweb_arr_sync.bot.watchlist import NoopFilmwebWatchlist
 from filmweb_arr_sync.config import load_config
 from filmweb_arr_sync.filmweb.models import FilmwebItem
 from filmweb_arr_sync.state import State
@@ -50,7 +49,6 @@ def _handler(config, state, radarr=None, sonarr=None, filmweb=None):
         radarr,
         sonarr,
         filmweb or MagicMock(),
-        NoopFilmwebWatchlist(),
     )
 
 

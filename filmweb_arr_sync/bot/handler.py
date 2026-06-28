@@ -8,7 +8,6 @@ from ..filmweb.client import FilmwebClient
 from ..filmweb.models import FilmwebItem
 from ..state import State
 from .links import ParsedLink, parse_link
-from .watchlist import FilmwebWatchlist
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +39,12 @@ class BotHandler:
         radarr: RadarrClient | None,
         sonarr: SonarrClient | None,
         filmweb: FilmwebClient,
-        watchlist: FilmwebWatchlist,
     ) -> None:
         self._config = config
         self._state = state
         self._radarr = radarr
         self._sonarr = sonarr
         self._filmweb = filmweb
-        self._watchlist = watchlist
 
     # --- entry point ---
 
@@ -120,7 +117,7 @@ class BotHandler:
             result = self._safe_lookup(self._radarr, item)
             reply = self._add_movie_from_lookup(result, item.filmweb_id)
 
-        return reply + self._watchlist_note(item)
+        return reply
 
     def _add_from_imdb(self, parsed: ParsedLink) -> str:
         imdb_id = parsed.item_id
@@ -238,15 +235,3 @@ class BotHandler:
         except Exception as e:
             logger.warning("Could not resolve tag '%s': %s — adding without tag", tag_name, e)
             return None
-
-    def _watchlist_note(self, item: FilmwebItem) -> str:
-        """Optionally write the item back to the Filmweb watchlist.
-
-        The default implementation is a no-op (see :mod:`watchlist`), so nothing
-        is appended unless an authenticated write-back is wired in.
-        """
-        if not self._watchlist.enabled:
-            return ""
-        if self._watchlist.add(item):
-            return "\n📌 Added to your Filmweb watchlist."
-        return "\n⚠️ Couldn't add to your Filmweb watchlist."

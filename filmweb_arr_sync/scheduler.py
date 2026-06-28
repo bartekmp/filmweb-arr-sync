@@ -36,7 +36,6 @@ def _maybe_start_bot(syncer: Syncer, config: Config, shutdown: threading.Event) 
 
     from .bot.handler import BotHandler
     from .bot.runner import BotRunner
-    from .bot.watchlist import build_watchlist
 
     handler = BotHandler(
         config,
@@ -44,7 +43,6 @@ def _maybe_start_bot(syncer: Syncer, config: Config, shutdown: threading.Event) 
         syncer.radarr,
         syncer.sonarr,
         syncer.filmweb,
-        build_watchlist(config),
     )
     BotRunner(config, handler, shutdown).start()
 
