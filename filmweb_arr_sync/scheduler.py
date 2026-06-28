@@ -27,6 +27,26 @@ def _next_cron_wait(expr: str) -> tuple[float, datetime]:
     return (next_run - datetime.now()).total_seconds(), next_run
 
 
+def _maybe_start_bot(syncer: Syncer, config: Config, shutdown: threading.Event) -> None:
+    if not config.telegram.enabled:
+        return
+    if not config.telegram.bot_token:
+        logger.warning("Telegram bot enabled but TELEGRAM_BOT_TOKEN is empty — bot not started")
+        return
+
+    from .bot.handler import BotHandler
+    from .bot.runner import BotRunner
+
+    handler = BotHandler(
+        config,
+        syncer.state,
+        syncer.radarr,
+        syncer.sonarr,
+        syncer.filmweb,
+    )
+    BotRunner(config, handler, shutdown).start()
+
+
 def run_scheduler(syncer: Syncer, config: Config) -> None:
     sync_cfg = config.sync
 
@@ -40,6 +60,7 @@ def run_scheduler(syncer: Syncer, config: Config) -> None:
 
     shutdown = threading.Event()
     syncer.start_batch_processor(shutdown)
+    _maybe_start_bot(syncer, config, shutdown)
 
     def _handle_signal(signum: int, frame: object) -> None:
         logger.info("Shutdown signal received, stopping after current sync...")

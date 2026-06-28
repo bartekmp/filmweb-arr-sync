@@ -18,6 +18,11 @@ _ALL_ENV_KEYS = [
     "SYNC_INTERVAL_MINUTES",
     "SYNC_DRY_RUN",
     "STATE_FILE",
+    "TELEGRAM_BOT_ENABLED",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_ALLOWED_USER_IDS",
+    "TELEGRAM_POLL_TIMEOUT_SECONDS",
+    "TELEGRAM_SEARCH_ON_ADD",
 ]
 
 
@@ -85,6 +90,37 @@ class TestLoadConfigFromEnv:
     def test_enabled_bool_parsing(self, tmp_path, monkeypatch, value, expected):
         monkeypatch.setenv("RADARR_ENABLED", value)
         assert load_config(str(tmp_path / "missing.yaml")).radarr.enabled is expected
+
+
+class TestTelegramConfig:
+    def test_disabled_by_default(self, tmp_path):
+        config = load_config(str(tmp_path / "missing.yaml"))
+        assert config.telegram.enabled is False
+        assert config.telegram.bot_token == ""
+        assert config.telegram.allowed_user_ids == []
+        assert config.telegram.search_on_add is True
+
+    def test_reads_env_settings(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_BOT_ENABLED", "true")
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
+        monkeypatch.setenv("TELEGRAM_ALLOWED_USER_IDS", "111, 222 ,333")
+        config = load_config(str(tmp_path / "missing.yaml"))
+        assert config.telegram.enabled is True
+        assert config.telegram.bot_token == "123:abc"
+        assert config.telegram.allowed_user_ids == [111, 222, 333]
+
+    def test_empty_allowed_user_ids(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ALLOWED_USER_IDS", "")
+        config = load_config(str(tmp_path / "missing.yaml"))
+        assert config.telegram.allowed_user_ids == []
+
+    def test_reads_yaml_with_list(self, tmp_path):
+        (tmp_path / "config.yaml").write_text(
+            "telegram:\n  enabled: true\n  bot_token: tok\n  allowed_user_ids:\n    - 5\n    - 6\n"
+        )
+        config = load_config(str(tmp_path / "config.yaml"))
+        assert config.telegram.enabled is True
+        assert config.telegram.allowed_user_ids == [5, 6]
 
 
 class TestLoadConfigFromYaml:
