@@ -95,6 +95,7 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `RADARR_QUALITY_PROFILE_ID` | No | `1` | Radarr quality profile ID |
 | `RADARR_ENABLED` | No | `true` | Set to `false` to disable Radarr sync |
 | `RADARR_TAG` | No | `filmweb` | Tag applied to every added movie; set to `""` to disable |
+| `RADARR_MONITORED` | No | `true` | Set to `false` to add movies unmonitored (no automatic downloads) |
 | `SONARR_URL` | Yes* | — | Sonarr base URL, e.g. `http://sonarr:8989` |
 | `SONARR_API_KEY` | Yes* | — | Sonarr API key (Settings → General) |
 | `SONARR_ROOT_FOLDER` | Yes* | `/tv` | Root folder path configured in Sonarr |
@@ -102,6 +103,7 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `SONARR_LANGUAGE_PROFILE_ID` | No | — | Sonarr v3 only; omit for Sonarr v4 |
 | `SONARR_ENABLED` | No | `true` | Set to `false` to disable Sonarr sync |
 | `SONARR_TAG` | No | `filmweb` | Tag applied to every added show; set to `""` to disable |
+| `SONARR_MONITORED` | No | `true` | Set to `false` to add series unmonitored (no automatic downloads) |
 | `SYNC_INTERVAL_MINUTES` | No | `30` | How often to poll Filmweb; ignored when `SYNC_CRON` is set |
 | `SYNC_CRON` | No | — | Cron expression for sync schedule, e.g. `0 4 * * *` (takes precedence over `SYNC_INTERVAL_MINUTES`) |
 | `SYNC_DRY_RUN` | No | `false` | Log what would be added without making changes |

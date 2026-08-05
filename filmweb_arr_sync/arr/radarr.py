@@ -10,8 +10,9 @@ _RETRY = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 
 
 
 class RadarrClient:
-    def __init__(self, url: str, api_key: str) -> None:
+    def __init__(self, url: str, api_key: str, monitored: bool = True) -> None:
         self._base = url.rstrip("/")
+        self._monitored = monitored
         self._session = requests.Session()
         self._session.params["apikey"] = api_key  # type: ignore[assignment]
         self._session.headers["Content-Type"] = "application/json"
@@ -69,7 +70,7 @@ class RadarrClient:
             **{k: v for k, v in movie.items() if k != "id"},
             "qualityProfileId": quality_profile_id,
             "rootFolderPath": root_folder,
-            "monitored": True,
+            "monitored": self._monitored,
             "tags": [tag_id] if tag_id is not None else [],
             "addOptions": {"searchForMovie": search},
         }

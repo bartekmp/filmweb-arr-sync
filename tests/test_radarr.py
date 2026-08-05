@@ -86,6 +86,12 @@ class TestAdd:
         assert payload["monitored"] is True
         assert payload["addOptions"]["searchForMovie"] is False
 
+    def test_monitored_false_when_opted_out(self):
+        client = RadarrClient("http://radarr:7878", "testapikey", monitored=False)
+        with patch.object(client._session, "post", return_value=MagicMock()) as mock_post:
+            client.add({"title": "T", "year": 2023, "tmdbId": 1}, "/movies", 1)
+        assert mock_post.call_args.kwargs["json"]["monitored"] is False
+
     def test_posts_to_correct_endpoint(self, client):
         movie = {"title": "T", "year": 2023, "tmdbId": 1}
         with patch.object(client._session, "post", return_value=MagicMock()) as mock_post:

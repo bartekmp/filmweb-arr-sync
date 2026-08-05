@@ -17,6 +17,7 @@ class RadarrConfig:
     quality_profile_id: int = 1
     enabled: bool = True
     tag: str = "filmweb"
+    monitored: bool = True
 
 
 @dataclass
@@ -28,6 +29,7 @@ class SonarrConfig:
     language_profile_id: int | None = None  # required for Sonarr v3, ignored by v4
     enabled: bool = True
     tag: str = "filmweb"
+    monitored: bool = True
 
 
 @dataclass
@@ -119,6 +121,7 @@ def load_config(config_file: str = "config.yaml") -> Config:
             ),
             enabled=_env_bool("RADARR_ENABLED", ra.get("enabled", True)),
             tag=_env_str("RADARR_TAG", ra.get("tag", "filmweb")),
+            monitored=_env_bool("RADARR_MONITORED", ra.get("monitored", True)),
         ),
         sonarr=SonarrConfig(
             url=_env_str("SONARR_URL", so.get("url", "")),
@@ -132,6 +135,7 @@ def load_config(config_file: str = "config.yaml") -> Config:
             ),
             enabled=_env_bool("SONARR_ENABLED", so.get("enabled", True)),
             tag=_env_str("SONARR_TAG", so.get("tag", "filmweb")),
+            monitored=_env_bool("SONARR_MONITORED", so.get("monitored", True)),
         ),
         sync=SyncConfig(
             interval_minutes=_env_int("SYNC_INTERVAL_MINUTES", sy.get("interval_minutes", 30)),

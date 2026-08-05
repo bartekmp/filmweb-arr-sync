@@ -17,6 +17,7 @@ services:
       RADARR_QUALITY_PROFILE_ID: 1
       # RADARR_ENABLED: "false"  # Set to false to disable Radarr sync
       # RADARR_TAG: filmweb       # Tag applied to added movies; set to "" to disable
+      # RADARR_MONITORED: "false" # Add movies unmonitored (no automatic downloads)
 
       SONARR_URL: http://sonarr:8989
       SONARR_API_KEY: your_sonarr_api_key
@@ -25,6 +26,7 @@ services:
       # SONARR_LANGUAGE_PROFILE_ID: 1  # Sonarr v3 only
       # SONARR_ENABLED: "false"  # Set to false to disable Sonarr sync
       # SONARR_TAG: filmweb       # Tag applied to added shows; set to "" to disable
+      # SONARR_MONITORED: "false" # Add series unmonitored (no automatic downloads)
 
       SYNC_INTERVAL_MINUTES: 30  # ignored when SYNC_CRON is set
       # SYNC_CRON: "0 4 * * *"  # optional: run at a fixed time instead of every N minutes

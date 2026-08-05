@@ -22,11 +22,15 @@ class Syncer:
 
         self._radarr: RadarrClient | None = None
         if config.radarr.enabled and config.radarr.url and config.radarr.api_key:
-            self._radarr = RadarrClient(config.radarr.url, config.radarr.api_key)
+            self._radarr = RadarrClient(
+                config.radarr.url, config.radarr.api_key, config.radarr.monitored
+            )
 
         self._sonarr: SonarrClient | None = None
         if config.sonarr.enabled and config.sonarr.url and config.sonarr.api_key:
-            self._sonarr = SonarrClient(config.sonarr.url, config.sonarr.api_key)
+            self._sonarr = SonarrClient(
+                config.sonarr.url, config.sonarr.api_key, config.sonarr.monitored
+            )
 
     @property
     def state(self) -> State:

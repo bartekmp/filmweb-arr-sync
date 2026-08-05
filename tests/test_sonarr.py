@@ -78,6 +78,12 @@ class TestAdd:
         assert payload["seasonFolder"] is True
         assert payload["addOptions"]["searchForMissingEpisodes"] is False
 
+    def test_monitored_false_when_opted_out(self):
+        client = SonarrClient("http://sonarr:8989", "testapikey", monitored=False)
+        with patch.object(client._session, "post", return_value=MagicMock()) as mock_post:
+            client.add({"title": "T", "tvdbId": 1, "seasons": []}, "/tv", 1)
+        assert mock_post.call_args.kwargs["json"]["monitored"] is False
+
     def test_includes_language_profile_id_when_provided(self, client):
         series = {"title": "T", "tvdbId": 1, "seasons": []}
         with patch.object(client._session, "post", return_value=MagicMock()) as mock_post:
