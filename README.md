@@ -114,7 +114,7 @@ Configuration can be provided via **environment variables** (recommended for Doc
 | `BATCH_INTERVAL_MINUTES` | No | `10` | Minutes to wait between batches (batch mode only) |
 | `TELEGRAM_BOT_ENABLED` | No | `false` | Enable the Telegram bot (daemon mode only) |
 | `TELEGRAM_BOT_TOKEN` | Yes** | — | Bot token from [@BotFather](https://t.me/BotFather) |
-| `TELEGRAM_ALLOWED_USER_IDS` | No | — | Comma-separated numeric user IDs allowed to use the bot; empty = everyone |
+| `TELEGRAM_ALLOWED_USER_IDS` | Yes** | — | Comma-separated numeric user IDs allowed to use the bot; empty = nobody |
 | `TELEGRAM_SEARCH_ON_ADD` | No | `true` | Trigger a Radarr/Sonarr search immediately after a bot add |
 | `TELEGRAM_POLL_TIMEOUT_SECONDS` | No | `30` | Long-poll timeout for fetching Telegram updates |
 
@@ -177,7 +177,7 @@ TELEGRAM_BOT_TOKEN: "123456:ABC-your-bot-token"
 TELEGRAM_ALLOWED_USER_IDS: "11111111"   # restrict to your own user ID
 ```
 
-> **Restrict access.** Anyone who finds your bot can message it. Set `TELEGRAM_ALLOWED_USER_IDS` to your own ID (comma-separate multiple IDs) so only you can add titles. If left empty, the bot responds to everyone.
+> **`TELEGRAM_ALLOWED_USER_IDS` is required.** Anyone who finds your bot can message it, so the bot only answers the numeric user IDs listed here (comma-separate multiple IDs). The list is fail-closed: if it is empty, **every** message is ignored and the bot is useless. Messages from anyone else are dropped without a reply — a rejection notice would confirm the bot exists and would let a stranger drive its outbound messages — and logged as `Ignoring message from unauthorized user_id=…`, which is a convenient way to read off the ID of someone you *do* want to add.
 
 **Usage:**
 
@@ -200,6 +200,7 @@ https://www.imdb.com/title/tt1375666/                 → resolved and added
 | `/help`, `/start` | Show usage |
 | `/last_sync` | When the scheduled watchlist sync last completed |
 | `/stats` | How many movies/series have been processed |
+| `/showconfig`, `/config` | Show the effective configuration (API keys and the bot token are reported only as `set`/`(not set)`, never printed) |
 
 > **Note:** The bot uses Telegram long-polling and only runs in daemon mode (not with `--run-once`). No inbound ports or webhooks are required.
 

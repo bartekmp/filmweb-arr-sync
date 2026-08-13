@@ -21,8 +21,27 @@ _HELP = (
     "Commands:\n"
     "/last_sync — when the watchlist sync last ran\n"
     "/stats — how many items have been processed\n"
+    "/showconfig — show the effective configuration\n"
     "/help — show this message"
 )
+
+
+def _yes_no(value: bool) -> str:
+    return "yes" if value else "no"
+
+
+def _or_unset(value: object) -> str:
+    return str(value) if value not in (None, "") else "(not set)"
+
+
+def _secret(value: str) -> str:
+    """Report only whether a credential is configured.
+
+    Chat history is a poor place to keep key material — it is backed up, synced
+    across devices and trivially forwarded — so the value itself never leaves
+    the process.
+    """
+    return "set" if value else "(not set)"
 
 
 class BotHandler:
@@ -68,6 +87,8 @@ class BotHandler:
             return self._last_sync()
         if cmd in ("stats", "status"):
             return self._stats()
+        if cmd in ("showconfig", "config"):
+            return self._show_config()
         return f"❓ Unknown command /{cmd}. Try /help."
 
     def _last_sync(self) -> str:
@@ -85,6 +106,69 @@ class BotHandler:
         pending = len(self._state.pending_films) + len(self._state.pending_serials)
         if pending:
             lines.append(f"Pending in batch queue: {pending}")
+        return "\n".join(lines)
+
+    def _show_config(self) -> str:
+        """Render the effective configuration, with credentials redacted."""
+        cfg = self._config
+        lines = [
+            "⚙️ Configuration",
+            "",
+            "Filmweb",
+            f"• Username: {_or_unset(cfg.filmweb.username)}",
+            "",
+            "Radarr",
+        ]
+
+        if cfg.radarr.enabled and cfg.radarr.url:
+            lines += [
+                f"• URL: {cfg.radarr.url}",
+                f"• API key: {_secret(cfg.radarr.api_key)}",
+                f"• Root folder: {cfg.radarr.root_folder}",
+                f"• Quality profile ID: {cfg.radarr.quality_profile_id}",
+                f"• Tag: {_or_unset(cfg.radarr.tag)}",
+                f"• Monitored: {_yes_no(cfg.radarr.monitored)}",
+            ]
+        else:
+            lines.append("• Disabled")
+
+        lines += ["", "Sonarr"]
+        if cfg.sonarr.enabled and cfg.sonarr.url:
+            lines += [
+                f"• URL: {cfg.sonarr.url}",
+                f"• API key: {_secret(cfg.sonarr.api_key)}",
+                f"• Root folder: {cfg.sonarr.root_folder}",
+                f"• Quality profile ID: {cfg.sonarr.quality_profile_id}",
+                f"• Language profile ID: {_or_unset(cfg.sonarr.language_profile_id)}",
+                f"• Tag: {_or_unset(cfg.sonarr.tag)}",
+                f"• Monitored: {_yes_no(cfg.sonarr.monitored)}",
+            ]
+        else:
+            lines.append("• Disabled")
+
+        schedule = (
+            f"{cfg.sync.cron} (cron)" if cfg.sync.cron else f"every {cfg.sync.interval_minutes} min"
+        )
+        batch = (
+            f"{cfg.sync.batch_size} items / {cfg.sync.batch_interval_minutes} min"
+            if cfg.sync.batch_queue_enabled
+            else "disabled"
+        )
+        lines += [
+            "",
+            "Sync",
+            f"• Schedule: {schedule}",
+            f"• Dry run: {_yes_no(cfg.sync.dry_run)}",
+            f"• State file: {cfg.sync.state_file}",
+            f"• Add delay: {cfg.sync.add_delay_seconds}s",
+            f"• Batch queue: {batch}",
+            "",
+            "Telegram",
+            f"• Bot token: {_secret(cfg.telegram.bot_token)}",
+            f"• Allowed user IDs: {', '.join(str(i) for i in cfg.telegram.allowed_user_ids)}",
+            f"• Search on add: {_yes_no(cfg.telegram.search_on_add)}",
+            f"• Poll timeout: {cfg.telegram.poll_timeout_seconds}s",
+        ]
         return "\n".join(lines)
 
     # --- links ---

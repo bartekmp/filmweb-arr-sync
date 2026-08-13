@@ -42,7 +42,7 @@ services:
       # Telegram bot — send Filmweb/IMDb links to add titles on demand (daemon mode only)
       # TELEGRAM_BOT_ENABLED: "true"
       # TELEGRAM_BOT_TOKEN: "123456:ABC-your-bot-token-from-botfather"
-      # TELEGRAM_ALLOWED_USER_IDS: "11111111,22222222"  # numeric user IDs; empty = everyone
+      # TELEGRAM_ALLOWED_USER_IDS: "11111111,22222222"  # required; numeric user IDs, empty = nobody
       # TELEGRAM_SEARCH_ON_ADD: "true"
 
 volumes:

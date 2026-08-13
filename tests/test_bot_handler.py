@@ -91,6 +91,59 @@ class TestCommands:
         assert "Unknown command" in handler.handle_message("/frobnicate")
 
 
+class TestShowConfig:
+    def test_lists_configured_values(self, config, state):
+        config.filmweb.username = "bartekmp"
+        config.radarr.url = "http://radarr:7878"
+        config.radarr.root_folder = "/movies"
+        config.sync.interval_minutes = 45
+        config.telegram.allowed_user_ids = [111, 222]
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "bartekmp" in reply
+        assert "http://radarr:7878" in reply
+        assert "/movies" in reply
+        assert "every 45 min" in reply
+        assert "111, 222" in reply
+
+    def test_redacts_credentials(self, config, state):
+        config.radarr.url = "http://radarr:7878"
+        config.radarr.api_key = "radarr-secret-key"
+        config.sonarr.url = "http://sonarr:8989"
+        config.sonarr.api_key = "sonarr-secret-key"
+        config.telegram.bot_token = "123456:bot-secret-token"
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "radarr-secret-key" not in reply
+        assert "sonarr-secret-key" not in reply
+        assert "bot-secret-token" not in reply
+        assert "API key: set" in reply
+        assert "Bot token: set" in reply
+
+    def test_marks_unset_credentials(self, config, state):
+        config.radarr.url = "http://radarr:7878"
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "API key: (not set)" in reply
+
+    def test_shows_disabled_services(self, config, state):
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "Radarr\n• Disabled" in reply
+        assert "Sonarr\n• Disabled" in reply
+
+    def test_shows_cron_schedule_when_set(self, config, state):
+        config.sync.cron = "0 * * * *"
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "0 * * * * (cron)" in reply
+
+    def test_shows_batch_queue_settings(self, config, state):
+        config.sync.batch_queue_enabled = True
+        config.sync.batch_size = 5
+        config.sync.batch_interval_minutes = 10
+        reply = _handler(config, state).handle_message("/showconfig")
+        assert "5 items / 10 min" in reply
+
+    def test_config_alias(self, config, state):
+        assert "Configuration" in _handler(config, state).handle_message("/config")
+
+
 class TestRejectsInvalid:
     def test_empty_message(self, config, state):
         handler = _handler(config, state)

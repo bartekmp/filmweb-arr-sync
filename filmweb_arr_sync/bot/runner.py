@@ -22,12 +22,13 @@ class BotRunner:
     def start(self) -> None:
         thread = threading.Thread(target=self._run, name="telegram-bot", daemon=True)
         thread.start()
-        scope = (
-            f"restricted to {len(self._allowed)} user(s)"
-            if self._allowed
-            else "open to all users (set TELEGRAM_ALLOWED_USER_IDS to restrict)"
-        )
-        logger.info("Telegram bot started — %s", scope)
+        if self._allowed:
+            logger.info("Telegram bot started — restricted to %d user(s)", len(self._allowed))
+        else:
+            logger.warning(
+                "Telegram bot started with an empty allow-list — every message will be "
+                "ignored. Set TELEGRAM_ALLOWED_USER_IDS to the numeric IDs that may use it."
+            )
 
     def _run(self) -> None:
         offset: int | None = None
@@ -62,9 +63,11 @@ class BotRunner:
         chat_id = message["chat"]["id"]
         user_id = message.get("from", {}).get("id")
 
-        if self._allowed and user_id not in self._allowed:
+        # Fail closed: an empty allow-list authorizes nobody. Unauthorized senders get
+        # no reply at all — answering would confirm the bot exists and would let an
+        # unauthenticated stranger drive our outbound message rate.
+        if user_id not in self._allowed:
             logger.warning("Ignoring message from unauthorized user_id=%s", user_id)
-            self._client.send_message(chat_id, "⛔ You're not authorized to use this bot.")
             return
 
         reply = self._handler.handle_message(text)

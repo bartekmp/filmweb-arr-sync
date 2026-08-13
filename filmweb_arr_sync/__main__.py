@@ -82,7 +82,7 @@ def _log_startup_config(config: Config, run_once: bool) -> None:
         scope = (
             f"{len(config.telegram.allowed_user_ids)} allowed user(s)"
             if config.telegram.allowed_user_ids
-            else "open to all users"
+            else "no allowed users — all messages ignored"
         )
         lines.append(f"  Telegram bot    : enabled ({scope})")
     else:
